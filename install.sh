@@ -5,7 +5,15 @@
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-link() { mkdir -p "$(dirname "$2")"; ln -sfn "$1" "$2"; echo "  $2 -> $1"; }
+# ln -sfn creates the link *inside* a real directory instead of replacing it, so an
+# existing real directory at the destination goes first. Destinations are built by this
+# script from $HOME, never from an argument.
+link() {
+  mkdir -p "$(dirname "$2")"
+  if [ -d "$2" ] && [ ! -L "$2" ]; then rm -rf "$2"; fi
+  ln -sfn "$1" "$2"
+  echo "  $2 -> $1"
+}
 
 echo "hooks:"
 for f in "$SRC"/hooks/*.mjs; do link "$f" "$HOME/.claude/hooks/$(basename "$f")"; done
