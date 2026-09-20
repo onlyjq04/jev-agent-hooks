@@ -1,0 +1,52 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/jev-skill-suggest.mjs",
+            "timeout": 10,
+            "statusMessage": "Jev suggests a skill"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Workflow",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/subagent-model-gate.mjs",
+            "timeout": 10,
+            "statusMessage": "Checking subagent model assignment"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/jev-agent-gate.mjs",
+            "timeout": 10,
+            "statusMessage": "Jev reviews the subagent dispatch"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/subagent-return-gate.mjs",
+            "timeout": 10,
+            "statusMessage": "Checking the subagent's deliverable"
+          }
+        ]
+      }
+    ]
+  }
+}

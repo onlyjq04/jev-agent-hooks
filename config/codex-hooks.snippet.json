@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/jev-skill-suggest.mjs --host codex",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/jev-agent-gate.mjs --host codex",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
