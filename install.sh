@@ -23,9 +23,10 @@ echo "claude:"
 for d in "$SRC"/skills/*/; do link "${d%/}" "$HOME/.claude/skills/$(basename "$d")"; done
 for f in "$SRC"/agents/*.md; do link "$f" "$HOME/.claude/agents/$(basename "$f")"; done
 
-# jev-decide is host-agnostic; ~/.agents/skills is where codex, pi and omp look
+# ~/.agents/skills is where codex, pi and omp look. jev-decide is host-agnostic, and
+# claude-subagent-model lives here too so those hosts read the same policy file, not a copy.
 echo "shared skills:"
-link "$SRC/skills/jev-decide" "$HOME/.agents/skills/jev-decide"
+for d in "$SRC"/skills/*/; do link "${d%/}" "$HOME/.agents/skills/$(basename "$d")"; done
 
 if [ -d "$HOME/.pi/agent" ]; then
   echo "pi:"
