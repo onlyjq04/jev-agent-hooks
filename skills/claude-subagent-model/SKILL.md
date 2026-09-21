@@ -31,18 +31,20 @@ Use the **aliases**, never a concrete model id. The aliases are the stable contr
 | Answer | Model |
 |---|---|
 | **Pure mechanics** — the answer exists (locate / extract / reshape), or the steps are fully scripted (batch rename, apply a given diff, run commands and report) | `haiku` |
-| **Any judgment** — implement to a spec, write tests, fix a bug, refactor, review, root cause, architecture, adversarial verify, judge/synthesis | `opus` |
-| **Judgment sustained across a long unattended run** | `fable` |
+| **Judgment that ends in a change, or a routine verdict** — implement to a spec, write tests, fix a bug, refactor, day-to-day code review, root-cause diagnosis | `opus` |
+| **A hard call, answered as judgment rather than code** — architecture and technology tradeoffs, cross-system impact assessment, adversarial review of a conclusion, the final judge or synthesis stage, or a question `opus` already failed to settle | `fable` |
 
-`sonnet` is **off the default route** (2026-09-18: low throughput, rework common). Use it only with a stated reason, marked by `sonnet-ok` in the Agent `description` (in a workflow: the `agent()` `label`); the gate denies it otherwise. When unsure between `haiku` and `opus`, pick `opus` — a redo costs more than the tier difference.
+`fable` runs as an **oracle**, not a builder: give it the question, the context, the constraints and what was already tried; it comes back with a recommendation and the reasoning behind it. Don't authorize it to edit files — when the answer has to become code, hand its recommendation to `opus`. Run length is **not** a `fable` criterion: an unattended multi-hour execution is still `opus`, because hours don't buy depth.
 
-Examples: `haiku` — greps, "where is X defined", renames, schema extraction, binary pass/fail checks, running a named command and summarizing output. `opus` — implementing a feature, tests against a contract, a bug fix even when file + symptom are named, code review, migration strategy, verifying a correctness/security claim, the final judge stage. `fable` — overnight refactors, whole-subsystem migrations, multi-hour loops nobody watches; give it the whole spec in one prompt; if it refuses security-adjacent work, re-run on `opus`.
+`sonnet` is **off the default route** (2026-09-18: low throughput, rework common). Use it only with a stated reason, marked by `sonnet-ok` in the Agent `description` (in a workflow: the `agent()` `label`); the gate denies it otherwise. When unsure between `haiku` and `opus`, pick `opus` — a redo costs more than the tier difference. When unsure between `opus` and `fable`, start on `opus`; escalate to `fable` when it comes back undecided, circles the same ground twice, or the call turns out to be a tradeoff rather than a task.
+
+Examples: `haiku` — greps, "where is X defined", renames, schema extraction, binary pass/fail checks, running a named command and summarizing output. `opus` — implementing a feature, tests against a contract, a bug fix even when file + symptom are named, day-to-day code review, verifying a correctness/security claim, carrying out a migration someone already chose. `fable` — "which of these three migration strategies survives a rolling release", "is this root-cause conclusion actually supported by the evidence", picking between two architectures, the final judge over several reviewers' findings, the question opus has now circled twice; if it refuses security-adjacent work, re-run on `opus`.
 
 A subtask that fits two rungs takes the rung it was *named* by: "find the callers" is `haiku` even inside a hard refactor.
 
 ## Calibration
 
-In a healthy fan-out, discovery and transform stages are `haiku`; execution, judge, synthesis, and root-cause stages are `opus`/`fable`. If a `haiku` stage starts needing decisions, it was mis-tiered — escalate to `opus`, don't retry on `haiku`.
+In a healthy fan-out, discovery and transform stages are `haiku`; execution, review and root-cause stages are `opus`; a `fable` stage appears at most once, where the run has to decide something rather than produce something. If a `haiku` stage starts needing decisions, it was mis-tiered — escalate to `opus`, don't retry on `haiku`.
 
 ## Effort
 
@@ -53,13 +55,13 @@ Effort is set per tier, not per whim. Omitted = inherit the session effort (`hig
 | Pure mechanics | `haiku` | `low` |
 | Execution that needs judgment | `opus` | inherit |
 | Review, root cause, adversarial verify, final judge | `opus` | `xhigh` |
-| Long unattended run | `fable` | inherit — `xhigh`/`max` multiplies an already large bill; raise only for a task shown to under-think at `high` |
+| Hard call answered as an oracle | `fable` | `xhigh` — it is one deep answer, not a long run; `max` only when `xhigh` came back undecided |
 
 - **Workflow**: pass `effort` in `agent()` opts, as a literal (`'low'|'medium'|'high'|'xhigh'|'max'`).
 - **Agent tool**: it has no effort parameter; effort comes from the agent definition. Pick a preset `subagent_type` and pass its matching `model` (the gate enforces the pair):
   - `mech` → `model: 'haiku'`, effort `low`
   - `deep` → `model: 'opus'`, effort `xhigh`
-  - `long` → `model: 'fable'`, effort `high`
+  - `oracle` → `model: 'fable'`, effort `xhigh`
   - anything else (general-purpose, Explore, specialists) inherits the session effort.
 
 ## In workflows
@@ -79,7 +81,7 @@ const verdict = await agent(verifyBrief(built), { label: 'verify', model: 'opus'
 
 ## Enforcement
 
-`~/.claude/hooks/subagent-model-gate.mjs` (PreToolUse on `Agent|Workflow`, registered in `~/.claude/settings.json`) denies: a missing `model`; a value outside the four; a non-literal model in a workflow script; `sonnet` without the `sonnet-ok` marker; a preset agent (`mech`/`deep`/`long`) with a mismatched model; a non-literal or invalid workflow `effort`. It returns the rubric so you can reassign and retry. Read the reason and fix the assignment; don't retry verbatim.
+`~/.claude/hooks/subagent-model-gate.mjs` (PreToolUse on `Agent|Workflow`, registered in `~/.claude/settings.json`) denies: a missing `model`; a value outside the four; a non-literal model in a workflow script; `sonnet` without the `sonnet-ok` marker; a preset agent (`mech`/`deep`/`oracle`) with a mismatched model; a non-literal or invalid workflow `effort`. It returns the rubric so you can reassign and retry. Read the reason and fix the assignment; don't retry verbatim.
 
 It decides applicability from three signals, first match wins:
 

@@ -35,8 +35,8 @@ const CLAUDE_TIERS = {
     'Purely mechanical: the answer already exists and the subagent only locates, searches, extracts, or reshapes it; or it follows fully scripted steps (batch rename, run commands, apply a given diff) with no judgment.',
   sonnet:
     'Rarely appropriate: only when the delegator explicitly states a reason why neither a mechanical haiku task nor a judgment-requiring opus task fits.',
-  opus: 'Any work that needs judgment: implementing to a spec, writing tests, fixing bugs, refactoring, code review, root-cause diagnosis, architecture, adversarial verification, judging or synthesis.',
-  fable: 'Long-running, unattended, autonomous work across many steps without supervision.',
+  opus: 'Judgment that ends in a change or a routine verdict: implementing to a spec, writing tests, fixing bugs, refactoring, day-to-day code review, root-cause diagnosis.',
+  fable: 'A hard call answered as judgment rather than code: architecture or technology tradeoffs, cross-system impact assessment, adversarial review of an existing conclusion, the final judge or synthesis stage, or a question opus already failed to settle. It advises and does not edit files; run length alone never puts work here.',
 }
 
 // ~/.pi/agent/AGENTS.md "Worker scope"

@@ -63,9 +63,10 @@ claim before reporting work as done.
 
 ### Preset agents
 
-`agents/{mech,deep,long}.md` exist because the Agent tool has no effort parameter, so effort has
-to come from an agent definition. `mech` is haiku at low effort, `deep` is opus at xhigh, `long`
-is fable at high. The rule gate enforces the pairing.
+`agents/{mech,deep,oracle}.md` exist because the Agent tool has no effort parameter, so effort has
+to come from an agent definition. `mech` is haiku at low effort, `deep` is opus at xhigh, `oracle`
+is fable at xhigh — a read-only advisor for hard calls, not a builder. The rule gate enforces the
+pairing.
 
 ## Requirements
 
@@ -157,7 +158,7 @@ and skill descriptions. Do not put secrets in an agent prompt.
 hooks/      jev-lib.mjs, jev-skill-suggest.mjs, jev-agent-gate.mjs, jev-cli.mjs,
             subagent-model-gate.mjs, subagent-return-gate.mjs
 skills/     jev-decide, claude-subagent-model
-agents/     mech.md, deep.md, long.md
+agents/     mech.md, deep.md, oracle.md
 pi/         before_agent_start and tool_call extensions that import the shared hooks
 config/     hook registrations to merge into the host's settings
 ```

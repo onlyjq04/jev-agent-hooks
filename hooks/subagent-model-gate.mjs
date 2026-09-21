@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs'
 const ALLOWED = ['haiku', 'sonnet', 'opus', 'fable']
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max']
 // 预设 effort 的 agent 必须配对应 model（Agent 的 model 参数会覆盖 frontmatter）
-const PRESET_MODEL = { mech: 'haiku', deep: 'opus', long: 'fable' }
+const PRESET_MODEL = { mech: 'haiku', deep: 'opus', oracle: 'fable' }
 // 2026-09-18: sonnet 返工率高，默认拒绝；确需使用时在 Agent description / workflow label 里写 sonnet-ok
 const SONNET_OK = /sonnet-ok/i
 const SONNET_DENY =
