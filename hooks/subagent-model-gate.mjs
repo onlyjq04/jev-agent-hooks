@@ -5,6 +5,7 @@
 //   - every subagent must get an EXPLICIT model (omitting = inheriting the
 //     main-loop model, which the policy forbids)
 //   - allowed values: haiku | sonnet | opus | fable  (anything else: deny)
+//   - sonnet carries no extra admission test; it routes like any other tier
 //   - Workflow scripts: every agent(...) call site must pass a literal
 //     model: 'haiku'|'sonnet'|'opus'|'fable' in its opts
 // Only aliases are accepted — never a concrete model id (claude-opus-5 etc.),
@@ -17,14 +18,6 @@ const ALLOWED = ['haiku', 'sonnet', 'opus', 'fable']
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max']
 // 预设 effort 的 agent 必须配对应 model（Agent 的 model 参数会覆盖 frontmatter）
 const PRESET_MODEL = { mech: 'haiku', bulk: 'sonnet', deep: 'opus', oracle: 'fable' }
-// 2026-09-18 起 sonnet 不在默认路由上；2026-09-21 起按「有界批量」三条判据放行，
-// 标记写在 Agent description / workflow label 里。effort 上限 medium，见 SONNET_EFFORT_MAX。
-const SONNET_OK = /sonnet-ok/i
-const SONNET_EFFORT_MAX = ['high', 'xhigh', 'max']
-const SONNET_DENY =
-  'model: "sonnet" 只接「有界批量」：①路径由你给定不需要它去找 ②完成与否有一条命令能判 ' +
-  '③派它是为了重复量不是为了想清楚。三条缺一条就不是 sonnet 的活——缺①去 haiku/opus，缺②或③去 opus。' +
-  '三条都成立时在 description（workflow 里是 label）写 sonnet-ok: <买的是哪种重复量> 再提交。'
 
 // Applicability, first match wins:
 //   1. CLAUDE_SUBAGENT_MODEL_GATE=on|1 / off|0 — explicit override.
@@ -73,8 +66,7 @@ process.stdin.on('end', () => {
     `需要自己想清楚什么、而你没有替它想好」：\n` +
     `  - 纯机械：答案已存在只需定位/改形，或步骤已写死的批量改写/跑命令 → haiku\n` +
     `  - 需要判断：按方案实现、写测试、修 bug、review、根因、架构、对抗式验证、judge → opus\n` +
-    `  - 有界批量（路径已给定 + 有一条命令能判完成 + 派的是重复量）→ sonnet，effort 上限 medium，\n` +
-    `    description/label 写 sonnet-ok，Agent 工具走 subagent_type: bulk\n` +
+    `  - 有界批量（路径已给定 + 有一条命令能判完成 + 派的是重复量）→ sonnet\n` +
     `  - 高难度决策/深度判断，且产出是结论不是代码（架构取舍、对抗式复核、最终裁决、opus 绕不出来的问题）→ fable\n` +
     `Workflow 脚本中 agent() 的 model 必须是字面量。只用别名，禁止具体模型 id。`
   process.stdout.write(
@@ -109,12 +101,6 @@ function checkAgent(input) {
   }
   const preset = PRESET_MODEL[input.subagent_type]
   if (preset && m !== preset) return [`Agent(${input.subagent_type}) 必须配 model: "${preset}"，当前是 "${m}"。`]
-  if (m === 'sonnet') {
-    if (!SONNET_OK.test(input.description || '')) return [`Agent ${SONNET_DENY}`]
-    // Agent 工具没有 effort 参数，非预设 agent 会继承会话 effort（high）——sonnet 最贵的那格
-    if (input.subagent_type !== 'bulk')
-      return [`Agent 的 model: "sonnet" 只能配 subagent_type: "bulk"（effort medium）。别的 agent 会继承会话 effort，sonnet 在 high/xhigh 上正是最烧 token 的一格。`]
-  }
   return []
 }
 
@@ -134,16 +120,8 @@ function checkWorkflow(input) {
       )
     } else if (!ALLOWED.includes(model.literal)) {
       problems.push(`Workflow 中 ${where} 的 model: "${model.literal}" 不在允许范围（haiku|sonnet|opus|fable）。`)
-    } else if (model.literal === 'sonnet' && !SONNET_OK.test(label || '')) {
-      problems.push(`Workflow 中 ${where} 的 ${SONNET_DENY}`)
     }
     const effort = readProp(call, 'effort')
-    if (!effort && model?.literal === 'sonnet') {
-      problems.push(`Workflow 中 ${where} 的 sonnet 没写 effort —— 会继承会话 effort（high），请显式写 'low' 或 'medium'。`)
-    }
-    if (effort && model?.literal === 'sonnet' && SONNET_EFFORT_MAX.includes(effort.literal)) {
-      problems.push(`Workflow 中 ${where} 的 sonnet 配了 effort: '${effort.literal}' —— 上限是 'medium'，再高就是用 mid 档判断烧 frontier 档 token 量。`)
-    }
     if (effort && !EFFORTS.includes(effort.literal)) {
       problems.push(`Workflow 中 ${where} 的 effort 必须是字面量 ${EFFORTS.map((e) => `'${e}'`).join('|')}，或省略以继承会话 effort。`)
     }
