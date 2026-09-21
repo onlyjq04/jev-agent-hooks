@@ -34,7 +34,7 @@ const CLAUDE_TIERS = {
   haiku:
     'Purely mechanical: the answer already exists and the subagent only locates, searches, extracts, or reshapes it; or it follows fully scripted steps (batch rename, run commands, apply a given diff) with no judgment.',
   sonnet:
-    'Rarely appropriate: only when the delegator explicitly states a reason why neither a mechanical haiku task nor a judgment-requiring opus task fits.',
+    'Bounded volume only, and all three must hold: the delegator already named the files/symbols and an example to follow (nothing to discover), one command decides whether the work is done, and the reason for delegating is repetition rather than thinking. Anything open-ended, any silent-failure risk, any verdict or design call belongs on opus.',
   opus: 'Judgment that ends in a change or a routine verdict: implementing to a spec, writing tests, fixing bugs, refactoring, day-to-day code review, root-cause diagnosis.',
   fable: 'A hard call answered as judgment rather than code: architecture or technology tradeoffs, cross-system impact assessment, adversarial review of an existing conclusion, the final judge or synthesis stage, or a question opus already failed to settle. It advises and does not edit files; run length alone never puts work here.',
 }

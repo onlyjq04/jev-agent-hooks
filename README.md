@@ -33,7 +33,8 @@ Two gates run before a subagent starts, and they do different jobs.
 
 `hooks/subagent-model-gate.mjs` is the rule layer. It denies a subagent with no explicit `model`,
 a model outside `haiku|sonnet|opus|fable`, a concrete model id instead of an alias, a preset agent
-paired with the wrong model, and `sonnet` without a stated reason. For a Workflow script it scans
+paired with the wrong model, `sonnet` without the `sonnet-ok` marker, `sonnet` from the Agent tool
+under any agent but `bulk`, and a workflow `sonnet` stage whose `effort` is missing or above `medium`. For a Workflow script it scans
 every `agent()` call site and requires a literal `model`, with a small JavaScript scanner that
 tracks string and comment state so an `agent(` inside a string does not count. The policy it
 enforces is `skills/claude-subagent-model/SKILL.md`.
@@ -63,9 +64,10 @@ claim before reporting work as done.
 
 ### Preset agents
 
-`agents/{mech,deep,oracle}.md` exist because the Agent tool has no effort parameter, so effort has
-to come from an agent definition. `mech` is haiku at low effort, `deep` is opus at xhigh, `oracle`
-is fable at xhigh — a read-only advisor for hard calls, not a builder. The rule gate enforces the
+`agents/{mech,bulk,deep,oracle}.md` exist because the Agent tool has no effort parameter, so effort
+has to come from an agent definition. `mech` is haiku at low effort, `bulk` is sonnet at medium —
+bounded repetition under a supplied pattern, and the only route to sonnet from the Agent tool —
+`deep` is opus at xhigh, `oracle` is fable at xhigh — a read-only advisor for hard calls, not a builder. The rule gate enforces the
 pairing.
 
 ## Requirements
@@ -158,7 +160,7 @@ and skill descriptions. Do not put secrets in an agent prompt.
 hooks/      jev-lib.mjs, jev-skill-suggest.mjs, jev-agent-gate.mjs, jev-cli.mjs,
             subagent-model-gate.mjs, subagent-return-gate.mjs
 skills/     jev-decide, claude-subagent-model
-agents/     mech.md, deep.md, oracle.md
+agents/     mech.md, bulk.md, deep.md, oracle.md
 pi/         before_agent_start and tool_call extensions that import the shared hooks
 config/     hook registrations to merge into the host's settings
 ```
