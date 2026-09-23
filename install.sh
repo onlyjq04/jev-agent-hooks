@@ -33,6 +33,11 @@ if [ -d "$HOME/.pi/agent" ]; then
   for f in "$SRC"/pi/extensions/*.ts; do link "$f" "$HOME/.pi/agent/extensions/$(basename "$f")"; done
 fi
 
+if [ -d "$HOME/.grok" ]; then
+  echo "grok:"
+  for d in "$SRC"/skills/*/; do link "${d%/}" "$HOME/.grok/skills/$(basename "$d")"; done
+fi
+
 echo
 echo "Next: export TYPESAFE_API_KEY, then register the hooks —"
 echo "  claude: merge config/claude-settings.snippet.json into ~/.claude/settings.json"

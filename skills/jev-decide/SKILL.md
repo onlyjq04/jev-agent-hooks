@@ -39,6 +39,22 @@ evidence instead of reporting. Official cookbook: double-checking citations.
 
 Put independent questions in one request (speculative fan-out); they run in parallel.
 
+## In a browser (ego-browser)
+
+You still drive the page: read the snapshot, pick the ref, act. Jev never picks the click.
+The three cases above map onto browser work like this:
+
+- **Large snapshot.** Hundreds of refs and you need the one for the goal: put the goal in
+  `state` and ask a Choice over the candidate refs (role + name as criteria). Read the top
+  few in the snapshot before acting.
+- **Irreversible click.** Submit, pay, delete, send, publish: ask act-or-ask first. Below
+  0.8 or `unclear`, call `task.handOff()` or ask the user instead of clicking.
+- **Before reporting.** Put the expected result and the relevant snapshot excerpt in
+  `state`; below 0.7, observe again instead of reporting done.
+
+Snapshots of logged-in pages carry personal data. Send only the excerpt the question
+needs, never the whole snapshot, and strip tokens, emails, and account numbers.
+
 ## When not to call it
 
 - Designing an approach, writing code, root-causing: you have far more context than Jev.
