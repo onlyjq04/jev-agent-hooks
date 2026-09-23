@@ -36,6 +36,8 @@ fi
 if [ -d "$HOME/.grok" ]; then
   echo "grok:"
   for d in "$SRC"/skills/*/; do link "${d%/}" "$HOME/.grok/skills/$(basename "$d")"; done
+  # Grok merges every ~/.grok/hooks/*.json, so the registration can be a link too
+  link "$SRC/config/grok-hooks.snippet.json" "$HOME/.grok/hooks/jev-hooks.json"
 fi
 
 echo
@@ -43,3 +45,4 @@ echo "Next: export TYPESAFE_API_KEY, then register the hooks —"
 echo "  claude: merge config/claude-settings.snippet.json into ~/.claude/settings.json"
 echo "  codex:  merge config/codex-hooks.snippet.json into ~/.codex/hooks.json, then trust it with /hooks"
 echo "  pi:     nothing to do, extensions load from ~/.pi/agent/extensions"
+echo "  grok:   nothing to do, ~/.grok/hooks/jev-hooks.json is linked"

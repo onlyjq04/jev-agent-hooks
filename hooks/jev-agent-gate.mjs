@@ -3,10 +3,12 @@
 //   Claude Code  PreToolUse `Agent`        — `node jev-agent-gate.mjs`
 //   Codex        PreToolUse `Agent` alias  — `node jev-agent-gate.mjs --host codex`
 //   pi           tool_call extension       — imports `gate` from this file
+//   Grok Build   PreToolUse `spawn_subagent` — `node jev-agent-gate.mjs --host grok`
 // Each host only checks what its own routing policy leaves to the model:
 //   Claude: agent fit + haiku/sonnet/opus/fable tier (claude-subagent-model policy)
 //   Codex:  agent fit only (~/.codex/AGENTS.md pins model/effort per role TOML)
 //   pi:     agent fit + worker tier luna/sol/astra (~/.pi/agent/AGENTS.md)
+//   Grok:   agent fit + the `subagent-tier:` the prompt declares (~/.grok/hooks/subagent-model-gate.mjs)
 // Fails open on every error. Denies at most once per (session, agent, tier) so a
 // wrong Jev call can never trap the main loop.
 // JEV_AGENT_GATE=off disables; =shadow logs without denying.
@@ -47,6 +49,15 @@ const PI_WORKER_TIERS = {
     'A hard implementation task: interacting constraints, large refactors, or genuinely complicated changes where a stronger model changes the outcome.',
 }
 
+// ~/.grok/hooks/subagent-model-gate.mjs GROK_TIERS; that gate already enforces tier -> model
+const GROK_TIERS = {
+  mechanical: 'Purely mechanical: locate, move, or reformat what already exists, with no judgment.',
+  general: 'Carry out an approach the delegator already chose, with ordinary reasoning.',
+  multimodal: 'The task needs to look at and understand images.',
+  hard: 'The subagent must work out the approach or find a root cause on its own.',
+  extreme: 'Long autonomous work where an early wrong turn cascades into failure.',
+}
+
 const HOSTS = {
   claude: {
     agentDirs: () => [join(HOME, '.claude/agents'), join(process.cwd(), '.claude/agents'), ...pluginAgentDirs()],
@@ -65,6 +76,15 @@ const HOSTS = {
       const requested = agent === 'worker' && model?.match(/luna|sol|astra/)?.[0]
       return requested ? { criteria: PI_WORKER_TIERS, requested } : null
     },
+  },
+  grok: {
+    agentDirs: () => [join(HOME, '.grok/agents'), join(process.cwd(), '.grok/agents')],
+    builtin: {
+      'general-purpose': 'Default type. Full-capability agent for any task.',
+      explore: 'Research agent. Searches, reads, greps, and runs shell commands, but does not edit files.',
+      plan: 'Planning agent. Explores the codebase and produces a structured implementation plan; does not edit files.',
+    },
+    tiers: (agent, model, tier) => (GROK_TIERS[tier] ? { criteria: GROK_TIERS, requested: tier } : null),
   },
 }
 
@@ -93,13 +113,13 @@ function askJev({ apiKey, task, agent, tiers }) {
 }
 
 // Returns { deny, reason, answers }. Never throws for Jev/network failures.
-export async function gate({ host, session, agentName, model, description, prompt }) {
+export async function gate({ host, session, agentName, model, tier, description, prompt }) {
   const mode = (process.env.JEV_AGENT_GATE || 'enforce').toLowerCase()
   const apiKey = process.env.TYPESAFE_API_KEY
   if (mode === 'off' || !apiKey) return { deny: false }
   const policy = HOSTS[host]
   const agent = { name: agentName, description: describeAgent(policy, agentName) }
-  const tiers = policy.tiers(agentName, model)
+  const tiers = policy.tiers(agentName, model, tier)
   let answers
   try {
     answers = await askJev({ apiKey, task: { description, prompt }, agent, tiers })
@@ -192,16 +212,21 @@ function log(entry) {
   logTo('jev-agent-gate.jsonl', entry)
 }
 
-// Command-hook entry for Claude Code and Codex (same PreToolUse stdin/stdout protocol).
+// Command-hook entry for Claude Code, Codex, and Grok (same PreToolUse stdout protocol).
 async function main() {
   const host = process.argv.includes('--host') ? process.argv[process.argv.indexOf('--host') + 1] : 'claude'
   if (host === 'claude' && !process.env.CLAUDECODE) return
   let raw = ''
   for await (const d of process.stdin) raw += d
   const payload = JSON.parse(raw)
-  const input = payload.tool_input || {}
+  const input = payload.tool_input || payload.toolInput || {}
   let call
-  if (host === 'codex') {
+  if (host === 'grok') {
+    // Grok's spawn schema omits subagent_type, so an absent one is general-purpose
+    if (typeof input.prompt !== 'string') return
+    const tier = input.prompt.match(/^subagent-tier:\s*(\S+)/m)?.[1]
+    call = { agentName: input.subagent_type || 'general-purpose', model: input.model, tier, description: input.description || '', prompt: input.prompt }
+  } else if (host === 'codex') {
     // spawn_agent's message arrives encrypted in some Codex builds; Jev cannot judge ciphertext
     if (typeof input.message !== 'string' || input.message.startsWith('gAAAAA')) return
     call = { agentName: input.agent_type || 'default', model: input.model, description: input.task_name || '', prompt: input.message }
@@ -211,7 +236,7 @@ async function main() {
     if (payload.tool_name !== 'Agent' || agentName === 'fork' || !input.model) return
     call = { agentName, model: input.model, description: input.description || '', prompt: input.prompt || '' }
   }
-  const { deny, reason } = await gate({ host, session: payload.session_id, ...call })
+  const { deny, reason } = await gate({ host, session: payload.session_id ?? payload.sessionId, ...call })
   if (!deny) return
   process.stdout.write(
     JSON.stringify({

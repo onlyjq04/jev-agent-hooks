@@ -2,7 +2,8 @@
 
 Hooks that put [TypeSafe Jev](https://docs.typesafe.ai) in two places in a coding agent's loop:
 picking which skill to load for a turn, and picking which model a subagent gets. One shared
-implementation runs on Claude Code, Codex, and [pi](https://github.com/badlogic/pi-mono).
+implementation runs on Claude Code, Codex, [pi](https://github.com/badlogic/pi-mono), and Grok Build
+(subagent routing only; see below).
 
 Every hook fails open. A Jev outage, a missing API key, or a bad response lets the turn through.
 
@@ -46,7 +47,10 @@ picks a different tier with confidence at or above 0.5 while giving the requeste
 
 Each host only asks what its own routing policy leaves open. Claude gets fit plus the four Claude
 tiers. pi gets fit plus the `luna`/`sol`/`astra` worker tiers. Codex gets fit only, because its
-role TOML pins model and effort ahead of the spawn parameters.
+role TOML pins model and effort ahead of the spawn parameters. Grok gets fit plus the
+`subagent-tier:` its own rule gate makes every spawn prompt declare. Grok has no skill suggestion:
+it discards `additionalContext` from an allowing `UserPromptSubmit` hook, so there is no way to
+inject the pick before the turn runs.
 
 A denial fires at most once per session, agent, and tier. Resubmitting the same call unchanged
 goes through, so a wrong Jev answer cannot trap the main loop.

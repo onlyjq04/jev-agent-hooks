@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "spawn_subagent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $HOME/.claude/hooks/jev-agent-gate.mjs --host grok",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
