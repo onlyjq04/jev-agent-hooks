@@ -9,7 +9,7 @@
 // The injected wording is the cookbook's measured wording: the suggestion is explicitly ignorable.
 // Fails open (no output) on any error. JEV_SKILL_SUGGEST=off disables; =shadow logs only.
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -178,6 +178,7 @@ async function main() {
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: suggestionBlock(result.pick) } }))
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// realpath: installed as a symlink, and import.meta.url is always the resolved path
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   main().catch(() => {}) // fail open
 }

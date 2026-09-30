@@ -13,7 +13,7 @@
 // wrong Jev call can never trap the main loop.
 // JEV_AGENT_GATE=off disables; =shadow logs without denying.
 
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -36,8 +36,8 @@ const CLAUDE_TIERS = {
   haiku:
     'Purely mechanical: the answer already exists and the subagent only locates, searches, extracts, or reshapes it; or it follows fully scripted steps (batch rename, run commands, apply a given diff) with no judgment.',
   sonnet:
-    'Bounded volume only, and all three must hold: the delegator already named the files/symbols and an example to follow (nothing to discover), one command decides whether the work is done, and the reason for delegating is repetition rather than thinking. Anything open-ended, any silent-failure risk, any verdict or design call belongs on opus.',
-  opus: 'Judgment that ends in a change or a routine verdict: implementing to a spec, writing tests, fixing bugs, refactoring, day-to-day code review, root-cause diagnosis.',
+    'The approach is already decided and the prompt reads as instructions: what to change, what to follow, and how to tell it is done. Implementing to a spec or written plan, writing tests against a stated contract, porting a pattern across listed call sites, carrying out a chosen migration, fixing a bug whose cause is already known.',
+  opus: 'The subagent has to work out the approach itself: open-ended feature design, root-cause diagnosis, debugging an unexplained failure, day-to-day code review verdicts, refactors whose target shape is not decided, or work that needs creativity and a wide look at options.',
   fable: 'A hard call answered as judgment rather than code: architecture or technology tradeoffs, cross-system impact assessment, adversarial review of an existing conclusion, the final judge or synthesis stage, or a question opus already failed to settle. It advises and does not edit files; run length alone never puts work here.',
 }
 
@@ -245,6 +245,7 @@ async function main() {
   )
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// realpath: installed as a symlink, and import.meta.url is always the resolved path
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   main().catch(() => {}) // fail open
 }
