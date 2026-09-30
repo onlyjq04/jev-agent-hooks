@@ -34,8 +34,11 @@ Two gates run before a subagent starts, and they do different jobs.
 
 `hooks/subagent-model-gate.mjs` is the rule layer. It denies a subagent with no explicit `model`,
 a model outside `haiku|sonnet|opus|fable`, a concrete model id instead of an alias, and a preset
-agent paired with the wrong model. `sonnet` carries no extra admission test; it routes like any
-other tier. For a Workflow script it scans
+agent paired with the wrong model. The Agent tool only takes aliases, so versions are pinned once in
+settings `env` (`ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU,FABLE}_MODEL`; see
+`config/claude-settings.snippet.json`): Opus 5.5, Sonnet 5.5, Haiku 4.5, Fable 5.1. The split
+between `sonnet` and `opus` is who decides the approach: a brief that reads as steps goes to
+`sonnet`, work that has to find its own approach goes to `opus`. For a Workflow script it scans
 every `agent()` call site and requires a literal `model`, with a small JavaScript scanner that
 tracks string and comment state so an `agent(` inside a string does not count. The policy it
 enforces is `skills/claude-subagent-model/SKILL.md`.
@@ -70,8 +73,7 @@ claim before reporting work as done.
 
 `agents/{mech,bulk,deep,oracle}.md` exist because the Agent tool has no effort parameter, so effort
 has to come from an agent definition. `mech` is haiku at low effort, `bulk` is sonnet at medium —
-bounded repetition under a supplied pattern, and the preset to reach for when you want sonnet
-capped rather than inheriting the session's effort — `deep` is opus at xhigh, `oracle` is fable at xhigh — a read-only advisor for hard calls, not a builder. The rule gate enforces the
+execution of an approach the delegator already wrote down as steps — `deep` is opus at xhigh, `oracle` is fable at xhigh — a read-only advisor for hard calls, not a builder. The rule gate enforces the
 pairing.
 
 ## Requirements

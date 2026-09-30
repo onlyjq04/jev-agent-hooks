@@ -8,8 +8,9 @@
 //   - sonnet carries no extra admission test; it routes like any other tier
 //   - Workflow scripts: every agent(...) call site must pass a literal
 //     model: 'haiku'|'sonnet'|'opus'|'fable' in its opts
-// Only aliases are accepted — never a concrete model id (claude-opus-5 etc.),
-// so this gate does not need updating when a new release ships.
+// Only aliases are accepted — never a concrete model id (claude-opus-5-5 etc.);
+// the Agent tool takes aliases only. Versions are pinned once, in
+// ~/.claude/settings.json env ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU,FABLE}_MODEL.
 // Exit 0 with no output = allow. Deny = JSON with hookSpecificOutput on stdout.
 
 import { readFileSync } from 'node:fs'
@@ -62,12 +63,11 @@ process.stdin.on('end', () => {
   const reason =
     `[subagent-model-gate] 模型分配不合规，已阻止。请按 claude-subagent-model 策略重新分配后重试：\n` +
     problems.map((p) => `  - ${p}`).join('\n') +
-    `\n规则：每个子代理必须【显式】指定 model（省略=继承主循环模型，禁止）。判据是「这个子代理` +
-    `需要自己想清楚什么、而你没有替它想好」：\n` +
-    `  - 纯机械：答案已存在只需定位/改形，或步骤已写死的批量改写/跑命令 → haiku\n` +
-    `  - 需要判断：按方案实现、写测试、修 bug、review、根因、架构、对抗式验证、judge → opus\n` +
-    `  - 有界批量（路径已给定 + 有一条命令能判完成 + 派的是重复量）→ sonnet\n` +
-    `  - 高难度决策/深度判断，且产出是结论不是代码（架构取舍、对抗式复核、最终裁决、opus 绕不出来的问题）→ fable\n` +
+    `\n规则：每个子代理必须【显式】指定 model（省略=继承主循环模型，禁止）。判据是「方案由谁来定」：\n` +
+    `  - 纯机械：答案已存在只需定位/改形，或步骤已写死的批量改写/跑命令 → haiku（Haiku 4.5）\n` +
+    `  - 方案已定、brief 能写成步骤 + 完成判据：按 spec 实现，按契约写测试，照模式移植，或修一个原因已知的 bug → sonnet（Sonnet 5.5）\n` +
+    `  - 方案要子代理自己想：开放式设计，查根因，下 code review 裁决，或需要创造性和发散思考的改动 → opus（Opus 5.5）\n` +
+    `  - 高难度决策/深度判断，且产出是结论不是代码（架构取舍、对抗式复核、最终裁决、opus 绕不出来的问题）→ fable（Fable 5.1）\n` +
     `Workflow 脚本中 agent() 的 model 必须是字面量。只用别名，禁止具体模型 id。`
   process.stdout.write(
     JSON.stringify({

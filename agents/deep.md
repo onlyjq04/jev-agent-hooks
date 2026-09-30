@@ -1,6 +1,6 @@
 ---
 name: deep
-description: 需要深度判断的活：code review、疑难 bug 根因、架构评审、对抗式验证、最终裁决/综合。普通的按方案实现不要派这里（用 general-purpose + opus，继承会话 effort）。
+description: 需要深度判断的活：code review、疑难 bug 根因、架构评审、对抗式验证、最终裁决/综合。方案已定、能写成步骤的实现不要派这里（用 bulk，即 sonnet）；方案没定、要自己设计的实现用 general-purpose + opus，继承会话 effort。
 model: opus
 effort: xhigh
 ---
